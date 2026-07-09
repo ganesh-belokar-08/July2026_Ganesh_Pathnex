@@ -1,0 +1,94 @@
+# Day 05 — Handlers, User-Data, Resource Limits
+
+## 🔹 Ansible — Handler to Restart Nginx
+
+---
+- name : Manage Nginx
+  hosts : all
+  become : yes
+
+  tasks :
+    - name : Update Config file
+      copy :
+         src : index.html
+         dest : /usr/home/nignx/index.html
+      notify : Restart Nginx
+
+  handlers :
+    - name : Restart Nginx
+      service :
+        name : Nginx
+        state : restarted
+
+## 🔹 Terraform — EC2 with User Data (c6a.12xlarge)
+
+rsource "aws_instance" "BravoEC2"{
+    ami = "ami-9989sdfsdfsdfee"
+    instance_type = "c6a.12xlarge"
+
+    user_data = <<EOF
+
+    #!/bin/bash
+    yum install -y httpd
+    systemctl start httpd
+    EOF
+
+    tags{
+        Name = "Bravo-EC2"
+    }
+}
+
+## 🔹 Kubernetes — Resource Limits
+
+apiVersion : v1
+kind : pod 
+metadata :
+  name : pathnex-limited-pod 
+spec :
+  containers :
+    - name : app
+      image : Nginx
+      resources :
+        memory : "256Mi"
+        cpu : "5OOm"
+
+# Day 05 — Environment Variables
+
+## 🔹 Jenkins Pipeline — Use Environment Variables
+
+pipeline {
+    agent any
+    environment{
+        INSTITUTE_NAME = "PATHNEX"
+    }
+    stages{
+        stage('Print'){
+            steps{
+                sh 'echo "Welcome to $INSTITUTE_NAME Devops Training"'
+            }
+        }
+        stage('Build){
+            steps{
+                sh 'mvn clean package -Din
+            }
+
+        }
+    }
+}
+
+## 🔹 GitLab CI — Use Environment Variables
+
+stages :
+ - build 
+
+ variables :
+ INSTITUTE_NAME : "PATHNEX"
+
+build :
+  stage : build
+  image : maven:3.8.1-jdk-17
+  script :
+    - git clone " "
+    - cd sample-java-app
+    - echo "Welcome to $INSTITUTE_NAME DevOps Training"
+    - mvn clean package -Dinstitute.name=$INSTITUTE_NAME
