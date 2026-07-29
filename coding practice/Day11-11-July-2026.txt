@@ -1,0 +1,112 @@
+# Day 11 — Database, Outputs, Sidecars, Functions
+
+## 🔹 Ansible — Install MariaDB
+
+---
+- name : Install MariaDB for Pathnex
+  hosts : all
+  become : yes
+
+  tasks:
+   - name : Install MariaDB
+     yum :
+       name : mariadb-server
+       state : present
+
+    - name : Start MariaDB 
+      service : 
+        name : mariadb
+        state : started
+        enable : yes
+
+
+## 🔹 Terraform — Output Public IP (r5.2xlarge)
+
+resource "aws_instance" "PathnexServer"{
+    ami = "ami-0abcjklsfdsfdfdsfs"
+    instance_type = "r5.2xlarge"
+
+    tags={
+        Name = "Pathnex-Output-EC2"
+    }
+}
+
+output "PathnexPublicIP"{
+    value = aws_instance.PathnexServer.public_ip
+}
+
+## 🔹 Kubernetes — Sidecar Container
+
+apiVersion : v1
+kind : pod
+metadata : 
+  name : pathnex-Sidecar
+spec :
+  containers:
+    - name : nginx
+      image : nginx
+    - name : Sidecar
+      image : busybox
+      command : ["sh", "-c", "echo Sidecar running; sleep 3600"]
+
+
+## 🔹 Shell Script — Function Example
+
+#!/bin/bash
+
+greet(){
+    echo "Welcome to Pathnex DevOps Training"
+}
+
+greet
+
+# Notifications
+
+## 🔹 Jenkins Pipeline — Email Notifications
+
+pipeline{
+    agent any
+    environment{
+        INSTITUTE_NAME = "Pathnex"
+    }
+    stages{
+        stage('Checkout'){
+            steps{
+                git url : <git_repository>
+            }
+        }
+        stage('Build'){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+    }
+
+    post{
+        success{
+            mail to : 'devTeam@pathnex.com',
+                 subject : "Sucess : Build #${env.BUILD_NUMBER}",
+                 body : "Build completed successfully for $INSTITUTE_NAME"
+        }
+        failure{
+             mail to : 'devTeam@pathnex.com',
+                 subject : "Sucess : Build #${env.BUILD_NUMBER}",
+                 body : "Build completed successfully for $INSTITUTE_NAME"
+        }
+    }
+}
+
+## 🔹 GitLab CI — Notifications
+
+stages :
+  - Build
+
+build :
+  stage : build
+  image : maven:3.8.1-jdk-17
+  script : 
+    - git clone <git_repository>
+    - cd sample-java-app
+    - mvn clean package
+after_script:
+    - echo "Sending notification to devTeam@pathnex.com"
