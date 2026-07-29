@@ -1,0 +1,88 @@
+# Day 08 — Variables, VPC, Probes, Loops
+
+## 🔹 Ansible — Install Packages Using Variables
+
+---
+- name : Install packages for Pathnex using variables 
+  host : all
+  become : yes
+
+  vars :
+    pathnex_packages :
+      - tree
+      - unzip
+      - vim
+
+  tasks :
+    - name : Install required packages
+      apt :
+        name : "{{pathnex_packages}}"
+        state : present
+
+
+## 🔹 Terraform — Create VPC + Subnet
+
+provider "aws" {
+    region = "ap-south-1"
+}
+
+resouce "aws_vpc" "PathnexVPC" {
+    cidr_block = "10.10.0.0/16"
+
+    tags = {
+        Name = "Pathnex-VPC"
+    }
+}
+
+resouce "aws_subnet"  "PathnexSubnet" {
+    vpc_id = aws_vpc.PathnexVPC.index
+    cidr_block = "10.10.1.0/24"
+    map_public_ip_on_launch = true
+
+    tags = {
+        Name = "Pathnex-Subnet"
+    }
+}
+
+
+## 🔹 Kubernetes — Add Liveness & Readiness Probes
+
+apiVersion : v1 
+kind : pod
+metadata : 
+  name : pathnex-probe-pod
+
+spec :
+  containers :
+    - name : web
+      image : nginx 
+      livenessProbe : 
+        httpGEt:
+          path : /
+          port : 80
+        initialDelaySeconds : 5
+      readinessProbe :
+        httpGet :
+          path : /
+          port : 80
+        initialDelaySeconds : 3
+
+## 🔹 Shell Script — Loop Through List
+
+#!/bin/bash
+
+for item in Pathnex Devops Training ; do 
+   echo "Item : $item"
+done
+
+# Conditional Stages
+
+## 🔹 Jenkins Pipeline — Conditional Execution
+
+pipeline {
+    agent any 
+    parameters {
+        string (name: 'ENVIRONMENT', defaultValue: 'dev', description : 'Deployment Environment' )
+    }
+    
+}
