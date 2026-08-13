@@ -1,0 +1,95 @@
+# Day 20 — DEBUG DAY
+
+## 🔹 Ansible — Broken
+
+---
+- name : Install stuff
+  hosts: all
+  become : true
+
+  tasks:
+    - name: install 
+      yum:
+        name: httpd
+        state: present
+
+## 🔹 Terraform — Broken  
+
+resource aws_instance "Bad"{
+    ami = "ami-1234@sfesfsfds"
+    instance_type = c6i.8xlarge
+}
+
+## 🔹 Kubernetes — Broken
+
+apiVersion: apps/v1 
+kind : Deployment 
+metadata:
+   name : broken-app 
+spec:
+  replicas:3
+  selector:
+    matchLabels:
+       app:broken
+    template:
+      metadata: 
+        labels: 
+          app: broken 
+
+       spec:
+         containers:
+           - name:app 
+             image: nginx
+
+
+# Secrets & Credentials
+
+## 🔹 Jenkins Pipeline — Using Credentials
+
+pipeline {
+    agent any
+
+    environment {
+        INSTITUTE_NAME = "Pathnex"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/Pathnex/sample-java-app.git'
+            }
+        }
+
+        stage('Use Secret') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'PATHNEX_API_KEY',
+                        variable: 'API_KEY'
+                    )
+                ]) {
+                    sh '''
+                        echo "Institute: $INSTITUTE_NAME"
+                        echo "API key is available securely"
+                    '''
+                }
+            }
+        }
+    }
+}
+
+## 🔹 GitLab CI — Using CI/CD Variables
+
+stages:
+ - build
+
+variables:
+   INSTITUTE_NAME : "Pathnex
+   API_KEY: "PLACEHOLDER_SECRET"
+
+build:
+   stage : build
+   image: alpine:latest
+   script:
+     - echo "Using secret $API_KEY for $INSTITUTE_NAME"
