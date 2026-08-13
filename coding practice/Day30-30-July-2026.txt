@@ -1,0 +1,206 @@
+# Day 30 — SPEED TYPING (LEVEL 3)
+
+### Ansible:
+
+---
+- name: Create Pathnex Admin User
+  hosts: all
+  become: true
+
+  vars:
+    username: pathnex-admin
+
+  tasks:
+
+    - name: Create user
+      ansible.builtin.user:
+        name: "{{ username }}"
+        shell: /bin/bash
+        state: present
+        create_home: true
+
+    - name: Add SSH public key
+      ansible.posix.authorized_key:
+        user: "{{ username }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+
+### Terraform:
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_instance" "pathnex_ec2" {
+  ami           = "ami-0f58b397bc5c1f2e"
+  instance_type = "t3.micro"
+
+  tags = {
+    Project = "Pathnex-Training"
+  }
+}
+
+
+### Kubernetes:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pathnex-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pathnex
+  template:
+    metadata:
+      labels:
+        app: pathnex
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pathnex-service
+spec:
+  type: ClusterIP
+  selector:
+    app: pathnex
+  ports:
+    - port: 80
+      targetPort: 80
+
+### Shell:
+#!/bin/bash
+
+echo "1) IP"
+echo "2) Disk"
+echo "3) Memory"
+
+read -p "Enter your choice: " choice
+
+case $choice in
+    1)
+        hostname -I
+        ;;
+    2)
+        df -h
+        ;;
+    3)
+        free -h
+        ;;
+    *)
+        echo "Invalid choice"
+        ;;
+esac
+
+## 5️⃣ Jenkins Pipeline
+
+pipeline {
+    agent any
+
+    environment {
+        INSTITUTE_NAME = "Pathnex"
+        TEAM           = "DevOps"
+        ENV            = "prod"
+        PROJECT        = "Pathnex-Training"
+    }
+
+    stages {
+
+        stage('Infrastructure') {
+            steps {
+                echo "Creating ${PROJECT} infrastructure"
+
+                dir('terraform') {
+                    sh 'terraform init'
+                    sh 'terraform validate'
+                    sh 'terraform plan'
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('App Deployment') {
+            steps {
+                echo "Deploying application for ${ENV}"
+
+                dir('ansible') {
+                    sh 'ansible-playbook -i inventory.ini create-user.yml'
+                }
+
+                dir('kubernetes') {
+                    sh 'kubectl apply -f app.yaml'
+                }
+            }
+        }
+
+        stage('Monitoring Checks') {
+            steps {
+                echo "Monitoring ${INSTITUTE_NAME} ${TEAM} environment"
+
+                sh 'chmod +x monitoring.sh'
+                sh './monitoring.sh'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully"
+        }
+
+        failure {
+            echo "Pipeline failed"
+        }
+    }
+}
+
+
+## 6️⃣ GitLab CI
+
+stages:
+  - infrastructure
+  - app_deployment
+  - monitoring_checks
+
+variables:
+  INSTITUTE_NAME: "Pathnex"
+  TEAM: "DevOps"
+  ENV: "prod"
+  PROJECT: "Pathnex-Training"
+
+terraform:
+  stage: infrastructure
+  script:
+    - echo "Creating $PROJECT infrastructure"
+    - cd terraform
+    - terraform init
+    - terraform validate
+    - terraform plan
+    - terraform apply -auto-approve
+
+ansible:
+  stage: app_deployment
+  script:
+    - echo "Configuring server using Ansible"
+    - cd ansible
+    - ansible-playbook -i inventory.ini create-user.yml
+
+kubernetes:
+  stage: app_deployment
+  script:
+    - echo "Deploying application to Kubernetes"
+    - cd kubernetes
+    - kubectl apply -f app.yaml
+
+monitoring:
+  stage: monitoring_checks
+  script:
+    - echo "Monitoring $INSTITUTE_NAME $TEAM $ENV environment"
+    - chmod +x monitoring.sh
+    - ./monitoring.sh
